@@ -30,6 +30,7 @@ import { sampleProducts, filterOptions, sortOptions } from "../../data";
 const ShopPage: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -146,7 +147,13 @@ const ShopPage: React.FC = () => {
     (filters.priceRange[0] > 0 || filters.priceRange[1] < 200 ? 1 : 0);
 
   const FilterPanel = () => (
-    <Box sx={{ p: 3 }}>
+    <Box
+      sx={{
+        p: { xs: 2, sm: 3 },
+        height: isMobile ? "100vh" : "auto",
+        overflow: isMobile ? "auto" : "visible",
+      }}
+    >
       <Stack
         direction="row"
         alignItems="center"
@@ -162,6 +169,7 @@ const ShopPage: React.FC = () => {
             size="small"
             onClick={clearAllFilters}
             startIcon={<Clear />}
+            sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
           >
             Clear All ({activeFiltersCount})
           </Button>
@@ -169,7 +177,7 @@ const ShopPage: React.FC = () => {
       </Stack>
 
       {/* Categories */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
           Categories
         </Typography>
@@ -181,17 +189,25 @@ const ShopPage: React.FC = () => {
                 <Checkbox
                   checked={filters.categories.includes(category)}
                   onChange={() => handleCategoryChange(category)}
-                  sx={{ color: "primary.main" }}
+                  sx={{
+                    color: "primary.main",
+                    p: { xs: 0.5, sm: 1 },
+                  }}
                 />
               }
-              label={category}
+              label={
+                <Typography sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}>
+                  {category}
+                </Typography>
+              }
+              sx={{ mb: 0.5 }}
             />
           ))}
         </FormGroup>
       </Box>
 
       {/* Sizes */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
           Sizes
         </Typography>
@@ -204,13 +220,17 @@ const ShopPage: React.FC = () => {
               variant={filters.sizes.includes(size) ? "filled" : "outlined"}
               color={filters.sizes.includes(size) ? "primary" : "default"}
               onClick={() => handleSizeChange(size)}
+              sx={{
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                height: { xs: "28px", sm: "32px" },
+              }}
             />
           ))}
         </Stack>
       </Box>
 
       {/* Colors */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
           Colors
         </Typography>
@@ -223,17 +243,21 @@ const ShopPage: React.FC = () => {
               variant={filters.colors.includes(color) ? "filled" : "outlined"}
               color={filters.colors.includes(color) ? "primary" : "default"}
               onClick={() => handleColorChange(color)}
+              sx={{
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                height: { xs: "28px", sm: "32px" },
+              }}
             />
           ))}
         </Stack>
       </Box>
 
       {/* Price Range */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
           Price Range
         </Typography>
-        <Box sx={{ px: 1 }}>
+        <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
           <Slider
             value={filters.priceRange}
             onChange={handlePriceChange}
@@ -241,7 +265,10 @@ const ShopPage: React.FC = () => {
             min={0}
             max={200}
             valueLabelFormat={(value) => `$${value}`}
-            sx={{ color: "primary.main" }}
+            sx={{
+              color: "primary.main",
+              height: { xs: 4, sm: 6 },
+            }}
           />
           <Stack direction="row" justifyContent="space-between" sx={{ mt: 1 }}>
             <Typography variant="body2" color="text.secondary">
@@ -257,8 +284,8 @@ const ShopPage: React.FC = () => {
   );
 
   return (
-    <Box sx={{ py: 4 }}>
-      <Container maxWidth="lg">
+    <Box sx={{ py: { xs: 2, sm: 4 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -267,48 +294,78 @@ const ShopPage: React.FC = () => {
         >
           <Typography
             variant="h1"
-            sx={{ mb: 2, fontSize: { xs: "2rem", md: "3rem" } }}
+            sx={{
+              mb: { xs: 1, sm: 2 },
+              fontSize: { xs: "1.75rem", sm: "2rem", md: "3rem" },
+              textAlign: { xs: "center", sm: "left" },
+            }}
           >
             Shop All
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              mb: { xs: 3, sm: 4 },
+              textAlign: { xs: "center", sm: "left" },
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+            }}
+          >
             Discover our complete collection of trendy fashion pieces
           </Typography>
         </motion.div>
 
         {/* Controls Bar */}
         <Stack
-          direction="row"
-          alignItems="center"
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "stretch", sm: "center" }}
           justifyContent="space-between"
+          spacing={{ xs: 2, sm: 0 }}
           sx={{
-            mb: 4,
-            p: 2,
+            mb: { xs: 3, sm: 4 },
+            p: { xs: 1.5, sm: 2 },
             backgroundColor: "background.paper",
             borderRadius: 2,
           }}
         >
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 1, sm: 2 }}
+            justifyContent={{ xs: "space-between", sm: "flex-start" }}
+          >
             {isMobile && (
               <Button
                 variant="outline"
                 startIcon={<FilterList />}
                 onClick={() => setFilterDrawerOpen(true)}
+                size={isSmallMobile ? "small" : "medium"}
+                sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
               >
                 Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
               </Button>
             )}
 
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
+            >
               {filteredProducts.length} products
             </Typography>
           </Stack>
 
-          <Stack direction="row" alignItems="center" spacing={2}>
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 1, sm: 2 }}
+            justifyContent={{ xs: "space-between", sm: "flex-end" }}
+          >
             {/* View Mode Toggle */}
             <Stack direction="row">
               <IconButton
                 onClick={() => setViewMode("grid")}
+                size={isSmallMobile ? "small" : "medium"}
                 sx={{
                   color:
                     viewMode === "grid" ? "primary.main" : "text.secondary",
@@ -316,10 +373,11 @@ const ShopPage: React.FC = () => {
                     viewMode === "grid" ? "primary.light" : "transparent",
                 }}
               >
-                <GridView />
+                <GridView fontSize={isSmallMobile ? "small" : "medium"} />
               </IconButton>
               <IconButton
                 onClick={() => setViewMode("list")}
+                size={isSmallMobile ? "small" : "medium"}
                 sx={{
                   color:
                     viewMode === "list" ? "primary.main" : "text.secondary",
@@ -327,12 +385,23 @@ const ShopPage: React.FC = () => {
                     viewMode === "list" ? "primary.light" : "transparent",
                 }}
               >
-                <ViewList />
+                <ViewList fontSize={isSmallMobile ? "small" : "medium"} />
               </IconButton>
             </Stack>
 
             {/* Sort Dropdown */}
-            <FormControl size="small" sx={{ minWidth: 180 }}>
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: { xs: 120, sm: 180 },
+                "& .MuiInputLabel-root": {
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                },
+                "& .MuiSelect-select": {
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                },
+              }}
+            >
               <InputLabel>Sort by</InputLabel>
               <Select
                 value={sortBy}
@@ -340,7 +409,11 @@ const ShopPage: React.FC = () => {
                 onChange={(e) => setSortBy(e.target.value)}
               >
                 {sortOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
+                  <MenuItem
+                    key={option.value}
+                    value={option.value}
+                    sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                  >
                     {option.label}
                   </MenuItem>
                 ))}
@@ -365,7 +438,7 @@ const ShopPage: React.FC = () => {
               <Stack
                 direction="row"
                 flexWrap="wrap"
-                gap={3}
+                gap={{ xs: 1.5, sm: 2, md: 3 }}
                 sx={{
                   justifyContent: viewMode === "list" ? "center" : "flex-start",
                 }}
@@ -378,11 +451,14 @@ const ShopPage: React.FC = () => {
                         viewMode === "list"
                           ? "100%"
                           : {
-                              xs: "100%",
-                              sm: "calc(50% - 12px)",
+                              xs: "calc(50% - 6px)",
+                              sm: "calc(50% - 8px)",
                               md: "calc(33.333% - 16px)",
                             },
-                      minWidth: viewMode === "list" ? "100%" : "280px",
+                      minWidth:
+                        viewMode === "list"
+                          ? "100%"
+                          : { xs: "150px", sm: "200px", md: "280px" },
                     }}
                   >
                     <motion.div
@@ -398,14 +474,23 @@ const ShopPage: React.FC = () => {
             </Stack>
 
             {filteredProducts.length === 0 && (
-              <Box sx={{ textAlign: "center", py: 8 }}>
-                <Typography variant="h5" sx={{ mb: 2 }}>
+              <Box sx={{ textAlign: "center", py: { xs: 4, sm: 8 } }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 2,
+                    fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                  }}
+                >
                   No products found
                 </Typography>
                 <Typography
                   variant="body1"
                   color="text.secondary"
-                  sx={{ mb: 3 }}
+                  sx={{
+                    mb: 3,
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  }}
                 >
                   Try adjusting your filters to see more results
                 </Typography>
@@ -425,12 +510,36 @@ const ShopPage: React.FC = () => {
         onClose={() => setFilterDrawerOpen(false)}
         sx={{
           "& .MuiDrawer-paper": {
-            width: 320,
+            width: { xs: "85vw", sm: 320 },
             maxWidth: "90vw",
           },
         }}
       >
-        <FilterPanel />
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <FilterPanel />
+          <Box
+            sx={{
+              p: 2,
+              borderTop: 1,
+              borderColor: "divider",
+              mt: "auto",
+            }}
+          >
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => setFilterDrawerOpen(false)}
+            >
+              Apply Filters
+            </Button>
+          </Box>
+        </Box>
       </Drawer>
     </Box>
   );
