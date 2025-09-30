@@ -1,306 +1,548 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import {
   Box,
   Container,
   Typography,
+  Paper,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Checkbox,
+  FormControlLabel,
+  FormGroup,
+  Slider,
   Stack,
+  Chip,
   IconButton,
-  TextField,
-  Button,
-  Divider,
-  Link as MuiLink,
+  Drawer,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
-import {
-  Instagram,
-  Facebook,
-  Twitter,
-  Pinterest,
-  Email,
-  Phone,
-  LocationOn,
-} from "@mui/icons-material";
-import Link from "next/link";
+import { FilterList, Clear, GridView, ViewList } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import ProductCard from "../../components/product/ProductCard";
+import Button from "../../components/ui/Button";
+import { sampleProducts, filterOptions, sortOptions } from "../../data";
 
-const Footer: React.FC = () => {
-  const handleNewsletterSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle newsletter signup
-    console.log("Newsletter signup");
+const ShopPage: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("popularity");
+  const [filters, setFilters] = useState({
+    categories: [] as string[],
+    sizes: [] as string[],
+    colors: [] as string[],
+    priceRange: [0, 200] as number[],
+  });
+
+  const filteredProducts = useMemo(() => {
+    let filtered = [...sampleProducts];
+
+    // Apply category filter
+    if (filters.categories.length > 0) {
+      filtered = filtered.filter((product) =>
+        filters.categories.includes(product.category)
+      );
+    }
+
+    // Apply size filter
+    if (filters.sizes.length > 0) {
+      filtered = filtered.filter((product) =>
+        product.sizes.some((size) => filters.sizes.includes(size))
+      );
+    }
+
+    // Apply color filter
+    if (filters.colors.length > 0) {
+      filtered = filtered.filter((product) =>
+        product.colors.some((color) => filters.colors.includes(color))
+      );
+    }
+
+    // Apply price filter
+    filtered = filtered.filter(
+      (product) =>
+        product.price >= filters.priceRange[0] &&
+        product.price <= filters.priceRange[1]
+    );
+
+    // Apply sorting
+    switch (sortBy) {
+      case "price-low":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case "newest":
+        filtered.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+        break;
+      case "rating":
+        filtered.sort((a, b) => b.rating - a.rating);
+        break;
+      default:
+        // popularity - keep bestsellers first
+        filtered.sort(
+          (a, b) => (b.isBestseller ? 1 : 0) - (a.isBestseller ? 1 : 0)
+        );
+    }
+
+    return filtered;
+  }, [filters, sortBy]);
+
+  const handleCategoryChange = (category: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter((c) => c !== category)
+        : [...prev.categories, category],
+    }));
   };
 
-  return (
-    <Box component="footer" sx={{ backgroundColor: "#f8f9fa", mt: 8 }}>
-      {/* Newsletter Section */}
-      <Box sx={{ backgroundColor: "primary.main", py: 4 }}>
-        <Container maxWidth="lg">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+  const handleSizeChange = (size: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      sizes: prev.sizes.includes(size)
+        ? prev.sizes.filter((s) => s !== size)
+        : [...prev.sizes, size],
+    }));
+  };
+
+  const handleColorChange = (color: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      colors: prev.colors.includes(color)
+        ? prev.colors.filter((c) => c !== color)
+        : [...prev.colors, color],
+    }));
+  };
+
+  const handlePriceChange = (event: Event, newValue: number | number[]) => {
+    setFilters((prev) => ({
+      ...prev,
+      priceRange: newValue as number[],
+    }));
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      categories: [],
+      sizes: [],
+      colors: [],
+      priceRange: [0, 200],
+    });
+  };
+
+  const activeFiltersCount =
+    filters.categories.length +
+    filters.sizes.length +
+    filters.colors.length +
+    (filters.priceRange[0] > 0 || filters.priceRange[1] < 200 ? 1 : 0);
+
+  const FilterPanel = () => (
+    <Box
+      sx={{
+        p: { xs: 2, sm: 3 },
+        height: isMobile ? "100vh" : "auto",
+        overflow: isMobile ? "auto" : "visible",
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 3 }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          Filters
+        </Typography>
+        {activeFiltersCount > 0 && (
+          <Button
+            variant="text"
+            size="small"
+            onClick={clearAllFilters}
+            startIcon={<Clear />}
+            sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
           >
-            <Stack
-              direction={{ xs: "column", md: "row" }}
-              spacing={3}
-              alignItems="center"
-              justifyContent="space-between"
+            Clear All ({activeFiltersCount})
+          </Button>
+        )}
+      </Stack>
+
+      {/* Categories */}
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+          Categories
+        </Typography>
+        <FormGroup>
+          {filterOptions.categories.map((category) => (
+            <FormControlLabel
+              key={category}
+              control={
+                <Checkbox
+                  checked={filters.categories.includes(category)}
+                  onChange={() => handleCategoryChange(category)}
+                  sx={{
+                    color: "primary.main",
+                    p: { xs: 0.5, sm: 1 },
+                  }}
+                />
+              }
+              label={
+                <Typography sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}>
+                  {category}
+                </Typography>
+              }
+              sx={{ mb: 0.5 }}
+            />
+          ))}
+        </FormGroup>
+      </Box>
+
+      {/* Sizes */}
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+          Sizes
+        </Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+          {filterOptions.sizes.map((size) => (
+            <Chip
+              key={size}
+              label={size}
+              clickable
+              variant={filters.sizes.includes(size) ? "filled" : "outlined"}
+              color={filters.sizes.includes(size) ? "primary" : "default"}
+              onClick={() => handleSizeChange(size)}
+              sx={{
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                height: { xs: "28px", sm: "32px" },
+              }}
+            />
+          ))}
+        </Stack>
+      </Box>
+
+      {/* Colors */}
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+          Colors
+        </Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
+          {filterOptions.colors.map((color) => (
+            <Chip
+              key={color}
+              label={color}
+              clickable
+              variant={filters.colors.includes(color) ? "filled" : "outlined"}
+              color={filters.colors.includes(color) ? "primary" : "default"}
+              onClick={() => handleColorChange(color)}
+              sx={{
+                fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                height: { xs: "28px", sm: "32px" },
+              }}
+            />
+          ))}
+        </Stack>
+      </Box>
+
+      {/* Price Range */}
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+          Price Range
+        </Typography>
+        <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
+          <Slider
+            value={filters.priceRange}
+            onChange={handlePriceChange}
+            valueLabelDisplay="auto"
+            min={0}
+            max={200}
+            valueLabelFormat={(value) => `$${value}`}
+            sx={{
+              color: "primary.main",
+              height: { xs: 4, sm: 6 },
+            }}
+          />
+          <Stack direction="row" justifyContent="space-between" sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              ${filters.priceRange[0]}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              ${filters.priceRange[1]}
+            </Typography>
+          </Stack>
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Box sx={{ py: { xs: 2, sm: 4 } }}>
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3 } }}>
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Typography
+            variant="h1"
+            sx={{
+              mb: { xs: 1, sm: 2 },
+              fontSize: { xs: "1.75rem", sm: "2rem", md: "3rem" },
+              textAlign: { xs: "center", sm: "left" },
+            }}
+          >
+            Shop All
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              mb: { xs: 3, sm: 4 },
+              textAlign: { xs: "center", sm: "left" },
+              fontSize: { xs: "0.875rem", sm: "1rem" },
+            }}
+          >
+            Discover our complete collection of trendy fashion pieces
+          </Typography>
+        </motion.div>
+
+        {/* Controls Bar */}
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          alignItems={{ xs: "stretch", sm: "center" }}
+          justifyContent="space-between"
+          spacing={{ xs: 2, sm: 0 }}
+          sx={{
+            mb: { xs: 3, sm: 4 },
+            p: { xs: 1.5, sm: 2 },
+            backgroundColor: "background.paper",
+            borderRadius: 2,
+          }}
+        >
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 1, sm: 2 }}
+            justifyContent={{ xs: "space-between", sm: "flex-start" }}
+          >
+            {isMobile && (
+              <Button
+                variant="outline"
+                startIcon={<FilterList />}
+                onClick={() => setFilterDrawerOpen(true)}
+                size={isSmallMobile ? "small" : "medium"}
+                sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+              >
+                Filters {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+              </Button>
+            )}
+
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
             >
-              <Box textAlign={{ xs: "center", md: "left" }}>
-                <Typography variant="h4" sx={{ color: "white", mb: 1 }}>
-                  Stay in Style
+              {filteredProducts.length} products
+            </Typography>
+          </Stack>
+
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={{ xs: 1, sm: 2 }}
+            justifyContent={{ xs: "space-between", sm: "flex-end" }}
+          >
+            {/* View Mode Toggle */}
+            <Stack direction="row">
+              <IconButton
+                onClick={() => setViewMode("grid")}
+                size={isSmallMobile ? "small" : "medium"}
+                sx={{
+                  color:
+                    viewMode === "grid" ? "primary.main" : "text.secondary",
+                  backgroundColor:
+                    viewMode === "grid" ? "primary.light" : "transparent",
+                }}
+              >
+                <GridView fontSize={isSmallMobile ? "small" : "medium"} />
+              </IconButton>
+              <IconButton
+                onClick={() => setViewMode("list")}
+                size={isSmallMobile ? "small" : "medium"}
+                sx={{
+                  color:
+                    viewMode === "list" ? "primary.main" : "text.secondary",
+                  backgroundColor:
+                    viewMode === "list" ? "primary.light" : "transparent",
+                }}
+              >
+                <ViewList fontSize={isSmallMobile ? "small" : "medium"} />
+              </IconButton>
+            </Stack>
+
+            {/* Sort Dropdown */}
+            <FormControl
+              size="small"
+              sx={{
+                minWidth: { xs: 120, sm: 180 },
+                "& .MuiInputLabel-root": {
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                },
+                "& .MuiSelect-select": {
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                },
+              }}
+            >
+              <InputLabel>Sort by</InputLabel>
+              <Select
+                value={sortBy}
+                label="Sort by"
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                {sortOptions.map((option) => (
+                  <MenuItem
+                    key={option.value}
+                    value={option.value}
+                    sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                  >
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Stack>
+        </Stack>
+
+        <Stack direction={isMobile ? "column" : "row"} spacing={3}>
+          {/* Desktop Filters Sidebar */}
+          {!isMobile && (
+            <Box sx={{ width: "25%", minWidth: 280 }}>
+              <Paper sx={{ position: "sticky", top: 100 }}>
+                <FilterPanel />
+              </Paper>
+            </Box>
+          )}
+
+          {/* Products Section */}
+          <Box sx={{ flex: 1 }}>
+            <Stack spacing={3}>
+              <Stack
+                direction="row"
+                flexWrap="wrap"
+                gap={{ xs: 1.5, sm: 2, md: 3 }}
+                sx={{
+                  justifyContent: viewMode === "list" ? "center" : "flex-start",
+                }}
+              >
+                {filteredProducts.map((product, index) => (
+                  <Box
+                    key={product.id}
+                    sx={{
+                      width:
+                        viewMode === "list"
+                          ? "100%"
+                          : {
+                              xs: "calc(50% - 6px)",
+                              sm: "calc(50% - 8px)",
+                              md: "calc(33.333% - 16px)",
+                            },
+                      minWidth:
+                        viewMode === "list"
+                          ? "100%"
+                          : { xs: "150px", sm: "200px", md: "280px" },
+                    }}
+                  >
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: index * 0.05 }}
+                    >
+                      <ProductCard product={product} />
+                    </motion.div>
+                  </Box>
+                ))}
+              </Stack>
+            </Stack>
+
+            {filteredProducts.length === 0 && (
+              <Box sx={{ textAlign: "center", py: { xs: 4, sm: 8 } }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    mb: 2,
+                    fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                  }}
+                >
+                  No products found
                 </Typography>
                 <Typography
                   variant="body1"
-                  sx={{ color: "white", opacity: 0.9 }}
+                  color="text.secondary"
+                  sx={{
+                    mb: 3,
+                    fontSize: { xs: "0.875rem", sm: "1rem" },
+                  }}
                 >
-                  Get the latest fashion updates and exclusive offers
+                  Try adjusting your filters to see more results
                 </Typography>
-              </Box>
-
-              <Box
-                component="form"
-                onSubmit={handleNewsletterSubmit}
-                sx={{
-                  display: "flex",
-                  gap: 2,
-                  minWidth: { xs: "100%", md: 400 },
-                  flexDirection: { xs: "column", sm: "row" },
-                }}
-              >
-                <TextField
-                  placeholder="Enter your email"
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                    flex: 1,
-                    backgroundColor: "white",
-                    borderRadius: 2,
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: 2,
-                    },
-                  }}
-                />
-                <Button
-                  type="submit"
-                  variant="contained"
-                  sx={{
-                    backgroundColor: "white",
-                    color: "primary.main",
-                    px: 3,
-                    "&:hover": {
-                      backgroundColor: "#f0f0f0",
-                    },
-                  }}
-                >
-                  Subscribe
+                <Button variant="primary" onClick={clearAllFilters}>
+                  Clear All Filters
                 </Button>
               </Box>
-            </Stack>
-          </motion.div>
-        </Container>
-      </Box>
-
-      {/* Main Footer Content */}
-      <Container maxWidth="lg" sx={{ py: 6 }}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={4}
-          useFlexGap
-          flexWrap="wrap"
-        >
-          {/* Brand Info */}
-          <Box flex={1} minWidth={240} mb={{ xs: 4, md: 0 }}>
-            <Typography
-              variant="h3"
-              sx={{
-                fontFamily: '"Dancing Script", cursive',
-                color: "primary.main",
-                mb: 2,
-              }}
-            >
-              Kashya
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 3, color: "text.secondary" }}>
-              Empowering young women with trendy, affordable fashion that
-              celebrates individuality and confidence. Every piece tells a
-              story.
-            </Typography>
-
-            {/* Social Media Icons */}
-            <Stack direction="row" spacing={1}>
-              <IconButton sx={{ color: "primary.main" }}>
-                <Instagram />
-              </IconButton>
-              <IconButton sx={{ color: "primary.main" }}>
-                <Facebook />
-              </IconButton>
-              <IconButton sx={{ color: "primary.main" }}>
-                <Twitter />
-              </IconButton>
-              <IconButton sx={{ color: "primary.main" }}>
-                <Pinterest />
-              </IconButton>
-            </Stack>
-          </Box>
-
-          {/* Quick Links */}
-          <Box flex={1} minWidth={160} mb={{ xs: 4, md: 0 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Shop
-            </Typography>
-            <Stack spacing={1}>
-              {[
-                "New Arrivals",
-                "Dresses",
-                "Tops",
-                "Skirts",
-                "Accessories",
-                "Sale",
-              ].map((item) => (
-                <MuiLink
-                  key={item}
-                  component={Link}
-                  href="/shop"
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: "0.875rem",
-                    textDecoration: "none",
-                    "&:hover": { color: "primary.main" },
-                  }}
-                >
-                  {item}
-                </MuiLink>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* Customer Care */}
-          <Box flex={1} minWidth={160} mb={{ xs: 4, md: 0 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Customer Care
-            </Typography>
-            <Stack spacing={1}>
-              {[
-                { label: "Size Guide", href: "/size-guide" },
-                { label: "Shipping Info", href: "/shipping" },
-                { label: "Contact Us", href: "/contact" },
-              ].map((item) => (
-                <MuiLink
-                  key={item.label}
-                  component={Link}
-                  href={item.href}
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: "0.875rem",
-                    textDecoration: "none",
-                    "&:hover": { color: "primary.main" },
-                  }}
-                >
-                  {item.label}
-                </MuiLink>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* About */}
-          <Box flex={1} minWidth={160} mb={{ xs: 4, md: 0 }}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              About
-            </Typography>
-            <Stack spacing={1}>
-              {[
-                { label: "Our Story", href: "/about" },
-                { label: "Blog", href: "/blog" },
-              ].map((item) => (
-                <MuiLink
-                  key={item.label}
-                  component={Link}
-                  href={item.href}
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: "0.875rem",
-                    textDecoration: "none",
-                    "&:hover": { color: "primary.main" },
-                  }}
-                >
-                  {item.label}
-                </MuiLink>
-              ))}
-            </Stack>
-          </Box>
-
-          {/* Contact Info */}
-          <Box flex={1} minWidth={200}>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              Get in Touch
-            </Typography>
-            <Stack spacing={2}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Email sx={{ fontSize: 16, color: "primary.main" }} />
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  hello@kashya.com
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Phone sx={{ fontSize: 16, color: "primary.main" }} />
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  +1 (555) 123-4567
-                </Typography>
-              </Stack>
-              <Stack direction="row" spacing={1} alignItems="flex-start">
-                <LocationOn
-                  sx={{ fontSize: 16, color: "primary.main", mt: 0.5 }}
-                />
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  123 Fashion Street
-                  <br />
-                  New York, NY 10001
-                </Typography>
-              </Stack>
-            </Stack>
-          </Box>
-        </Stack>
-      </Container>
-
-      {/* Bottom Bar */}
-      <Divider />
-      <Container maxWidth="lg">
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          justifyContent="space-between"
-          alignItems="center"
-          spacing={2}
-          sx={{ py: 3 }}
-        >
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            © 2024 Kashya. All rights reserved.
-          </Typography>
-
-          <Stack direction="row" spacing={3}>
-            {["Privacy Policy", "Terms of Service", "Cookie Policy"].map(
-              (item) => (
-                <MuiLink
-                  key={item}
-                  component={Link}
-                  href={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: "0.875rem",
-                    textDecoration: "none",
-                    "&:hover": { color: "primary.main" },
-                  }}
-                >
-                  {item}
-                </MuiLink>
-              )
             )}
-          </Stack>
+          </Box>
         </Stack>
       </Container>
+
+      {/* Mobile Filter Drawer */}
+      <Drawer
+        anchor="left"
+        open={filterDrawerOpen}
+        onClose={() => setFilterDrawerOpen(false)}
+        sx={{
+          "& .MuiDrawer-paper": {
+            width: { xs: "85vw", sm: 320 },
+            maxWidth: "90vw",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
+        >
+          <FilterPanel />
+          <Box
+            sx={{
+              p: 2,
+              borderTop: 1,
+              borderColor: "divider",
+              mt: "auto",
+            }}
+          >
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => setFilterDrawerOpen(false)}
+            >
+              Apply Filters
+            </Button>
+          </Box>
+        </Box>
+      </Drawer>
     </Box>
   );
 };
 
-export default Footer;
+export default ShopPage;
